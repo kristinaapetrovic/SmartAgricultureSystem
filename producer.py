@@ -1,13 +1,14 @@
 import json
 import uuid
 import random
+import time
 from datetime import datetime
 from confluent_kafka import Producer
 
 conf = {'bootstrap.servers': 'localhost:9092'}
 producer = Producer(conf)
 
-TOPIC="sensors_readings"
+TOPIC="sensor_readings"
 
 sensor_ids=["sensor_001", "sensor_002", "sensor_003"]
 
@@ -48,10 +49,11 @@ def delivery_report(err, msg):
         print(f"Messgae delivered to {msg.topic()} partition {msg.partition()}")
 
 if __name__ == '__main__':
-    for _ in range(10):
+    while True:
         event, key = generate_event()
         producer.produce(TOPIC, key=key, value=json.dumps(event), on_delivery=delivery_report)
         producer.flush()
+        time.sleep(2)
 
 
 
