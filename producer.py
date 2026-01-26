@@ -4,11 +4,15 @@ import random
 import time
 from datetime import datetime
 from confluent_kafka import Producer
+import os
+from dotenv import load_dotenv
 
-conf = {'bootstrap.servers': 'localhost:9092'}
+load_dotenv()
+
+KAFKA_BROKER = os.environ.get("KAFKA_BROKER", "localhost:9092")
+TOPIC = os.environ.get("KAFKA_TOPIC", "sensor_readings")
+conf = {'bootstrap.servers': KAFKA_BROKER}
 producer = Producer(conf)
-
-TOPIC="sensor_readings"
 
 sensor_ids=["sensor_001", "sensor_002", "sensor_003"]
 

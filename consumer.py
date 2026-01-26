@@ -1,10 +1,16 @@
 from confluent_kafka import Consumer, Producer
 import json
 import sqlite3
+import os
+from dotenv import load_dotenv
 
-KAFKA_BROKER="localhost:9092"
-TOPIC="sensor_readings"
-DLQ_TOPIC="sensor_readings_glq"
+# Učitaj .env fajl
+load_dotenv()
+
+KAFKA_BROKER = os.environ.get("KAFKA_BROKER", "localhost:9092")
+TOPIC = os.environ.get("KAFKA_TOPIC", "sensor_readings")
+GROUP_ID = os.environ.get("KAFKA_GROUP_ID", "sensors_consumers")
+DLQ_TOPIC = "sensor_readings_glq"
 
 dlq_producer = Producer({"bootstrap.servers": KAFKA_BROKER})
 
@@ -32,9 +38,9 @@ def save_event(event):
         print(f"Event {event['event_id']} already exists. Skipping.")
         conn.close()
 
-consumer_conf={
+consumer_conf = {
     "bootstrap.servers": KAFKA_BROKER,
-    "group.id": "sensors_consumers",
+    "group.id": GROUP_ID,
     "auto.offset.reset": "earliest"
 }
 
