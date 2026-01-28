@@ -4,7 +4,6 @@ import sqlite3
 import os
 from dotenv import load_dotenv
 
-# Učitaj .env fajl
 load_dotenv()
 
 KAFKA_BROKER = os.environ.get("KAFKA_BROKER", "localhost:9092")
@@ -27,16 +26,45 @@ def validate_event(event):
 def save_event(event):
     conn=sqlite3.connect("sensors.db")
     cursor=conn.cursor()
+
     try:
         cursor.execute('''
                     INSERT INTO events (event_id, event_type, business_id, timestamp, payload)
                     VALUES (?, ?, ?, ?, ?)
-                ''', (event["event_id"], event["event_type"], event["business_id"], event["timestamp"],
-                      json.dumps(event["payload"])))
+                ''', (event["event_id"], event["event_type"], event["business_id"], event["timestamp"], json.dumps(event["payload"])))
         conn.commit()
     except:
         print(f"Event {event['event_id']} already exists. Skipping.")
+    finally:
         conn.close()
+
+
+def update_sensor_summary(event):
+    payload = event["payload"]
+    sensor_id = event["business_id"]
+
+    temperature = payload.get("temperature")
+    humidity = payload.get("humidity")
+    soil = payload.get("soil_moisture")
+
+    # summary requires all values
+    if temperature is None or humidity is None or soil is None:
+        return
+
+    conn = sqlite3.connect("sensors.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO sensor_summary (sensor_id, last_temperature, last_humidity, last_soil_moisture)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(sensor_id) DO UPDATE SET
+            last_temperature = excluded.last_temperature,
+            last_humidity = excluded.last_humidity,
+            last_soil_moisture = excluded.last_soil_moisture
+    """, (sensor_id, temperature, humidity, soil))
+
+    conn.commit()
+    conn.close()
 
 consumer_conf = {
     "bootstrap.servers": KAFKA_BROKER,
@@ -59,6 +87,7 @@ while True:
     if validate_event(event):
         print(f"Processed event {event['event_id']} from partition {msg.partition()}")
         save_event(event)
+        update_sensor_summary(event)
     else:
         print(f"Invalid event {event['event_id']}, send to DLQ")
         dlq_producer.produce(DLQ_TOPIC, key=event.get("business_id"), value=json.dumps(event))

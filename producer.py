@@ -17,7 +17,8 @@ producer = Producer(conf)
 sensor_ids=["sensor_001", "sensor_002", "sensor_003"]
 
 def generate_event():
-    event_types=["temperature_reading", "humidity_reading", "soil_moisture_reading", "plant_health_alert"]
+    event_types=["temperature_reading", "humidity_reading",
+                 "soil_moisture_reading", "plant_health_alert"]
     alerts=["pest_detected", "disease_detected", "wilting"]
     event_type=random.choice(event_types)
     sensor_id=random.choice(sensor_ids)
@@ -50,7 +51,7 @@ def delivery_report(err, msg):
     if err:
         print(f"Delivery failed for message {msg.key()}: {err}")
     else:
-        print(f"Messgae delivered to {msg.topic()} partition {msg.partition()}")
+        print(f"Message delivered to {msg.topic()} partition {msg.partition()}")
 
 if __name__ == '__main__':
     while True:
